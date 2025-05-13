@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indigenous Communities Challenges Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .info-panel h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .info-panel h3 {
+            margin-bottom: 5px;
+            color: #3498db;
+        }
+        .info-panel p {
+            margin-top: 0;
+        }
+        .info-panel img {
+            width: 100%;
+            height: auto;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            line-height: 1.5;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .hidden {
+            display: none;
+        }
+        .close-btn {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .custom-icon {
+            background: #e74c3c;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="infoPanel" class="info-panel hidden">
+        <span class="close-btn" onclick="closeInfoPanel()">×</span>
+        <h2 id="groupName"></h2>
+        <div id="groupImage"></div>
+        <div id="groupInfo"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([12.8797, 121.7740], 5); // Centered on Philippines
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Indigenous groups data
+        const indigenousGroups = [
+            {
+                name: "Lumad (Mindanao, Philippines)",
+                latlng: [7.1907, 125.4553],
+                population: "About 2.1 million",
+                challenges: "Land grabbing, militarization, displacement due to mining and logging operations, lack of recognition of ancestral domains",
+                culture: "Comprises 18 ethnolinguistic groups with distinct cultures, primarily animist with some Christian and Muslim influences",
+                status: "Under threat",
+                image: "Lumad.jpg"
+            },
+            {
+                name: "Igorot (Cordillera, Philippines)",
+                latlng: [16.8333, 120.8667],
+                population: "Approximately 1.5 million",
+                challenges: "Large-scale mining projects threatening ancestral lands, cultural erosion, discrimination",
+                culture: "Known for rice terraces, rich weaving traditions, and indigenous governance systems",
+                status: "Endangered",
+                image: "Igorot.jpg"
+            },
+            {
+                name: "Aeta (Luzon, Philippines)",
+                latlng: [15.4706, 120.4613],
+                population: "Around 50,000-100,000",
+                challenges: "Displacement from ancestral lands, limited access to education and healthcare, discrimination",
+                culture: "One of the earliest inhabitants of the Philippines, traditionally hunter-gatherers",
+                status: "Critically endangered",
+                image: "Aeta.jpg"
+            },
+            {
+                name: "Māori (New Zealand)",
+                latlng: [-40.9006, 174.8860],
+                population: "Approximately 775,000",
+                challenges: "Land rights issues, socioeconomic disparities, cultural preservation",
+                culture: "Rich oral traditions, haka dance, intricate tattoos (ta moko)",
+                status: "Recognized",
+                image: "Maori.jpg"
+            },
+            {
+                name: "Sami (Scandinavia)",
+                latlng: [68.5, 23.0],
+                population: "Around 80,000",
+                challenges: "Climate change affecting reindeer herding, land rights disputes, cultural assimilation",
+                culture: "Traditional reindeer herders, distinctive clothing and yoik singing",
+                status: "Protected",
+                image: "sami.jpg"
+            },
+            {
+                name: "Yanomami (Brazil/Venezuela)",
+                latlng: [2.5, -64.0],
+                population: "Approximately 35,000",
+                challenges: "Illegal gold mining, deforestation, violence from outsiders, disease",
+                culture: "Semi-nomadic hunter-gatherers living in communal yano houses",
+                status: "Severely threatened",
+                image: "Yanomami.jpg"
+            },
+            {
+                name: "San (Southern Africa)",
+                latlng: [-22.0, 20.0],
+                population: "Around 90,000",
+                challenges: "Land dispossession, poverty, discrimination, limited recognition of rights",
+                culture: "Ancient hunter-gatherer society with unique click languages",
+                status: "Marginalized",
+                image: "San.jpg"
+            }
+        ];
+
+        // Create custom icon
+        const indigenousIcon = L.divIcon({
+            className: 'custom-icon',
+            iconSize: [20, 20]
+        });
+
+        // Add markers for each indigenous group
+        indigenousGroups.forEach(group => {
+            const marker = L.marker(group.latlng, { icon: indigenousIcon }).addTo(map);
+            
+            marker.on('click', function() {
+                document.getElementById('groupName').textContent = group.name;
+                
+                // Add image if available
+                let imageContent = '';
+                if (group.image) {
+                    imageContent = `<img src="${group.image}" alt="${group.name}">`;
+                }
+                document.getElementById('groupImage').innerHTML = imageContent;
+                
+                let infoContent = `
+                    <h3>Population</h3>
+                    <p>${group.population}</p>
+                    <h3>Challenges</h3>
+                    <p>${group.challenges}</p>
+                    <h3>Culture</h3>
+                    <p>${group.culture}</p>
+                    <h3>Current Status</h3>
+                    <p>${group.status}</p>
+                `;
+                
+                document.getElementById('groupInfo').innerHTML = infoContent;
+                document.getElementById('infoPanel').classList.remove('hidden');
+                
+                // Center map on the marker with some offset for the info panel
+                map.setView(group.latlng, 6, {
+                    animate: true
+                });
+            });
+        });
+
+        // Function to close info panel
+        function closeInfoPanel() {
+            document.getElementById('infoPanel').classList.add('hidden');
+        }
+
+        // Add legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4>Indigenous Groups Status</h4>
+                <div><i style="background: #e74c3c"></i> Critically endangered</div>
+                <div><i style="background: #f39c12"></i> Endangered</div>
+                <div><i style="background: #3498db"></i> Under threat</div>
+                <div><i style="background: #2ecc71"></i> Protected/Recognized</div>
+                <div><i style="background: #95a5a6"></i> Marginalized</div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
